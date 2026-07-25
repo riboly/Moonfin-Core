@@ -1,0 +1,95 @@
+name: Sync upstream changes
+
+on:
+  schedule:
+    # Daily at 02:17 UTC (10:17 China Standard Time).
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: true
+
+jobs:
+  sync-main:
+    name: Update main from upstream
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fast-forward main to upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/Moonfin-Client/Moonfin-Core.git
+          git fetch --prune upstream main
+          git push origin upstream/main:main
+
+  prepare-custom-sync:
+    name: Prepare custom sync pull request
+    runs-on: ubuntu-latest
+    needs: sync-main
+    steps:
+      - name: Checkout custom branch
+        uses: actions/checkout@v4
+        with:
+          ref: custom
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge updated main into a sync branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://github.com/Moonfin-Client/Moonfin-Core.git
+          git fetch --prune origin main custom
+          git fetch --prune upstream main
+          git checkout -B sync/upstream-main origin/custom
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo 'custom already contains all commits from main; no PR is needed.'
+            echo 'NO_SYNC_NEEDED=true' >> "$GITHUB_ENV"
+            exit 0
+          fi
+          git merge --no-edit origin/main
+          if git diff --quiet origin/custom HEAD; then
+            echo 'No file changes are needed; no PR is needed.'
+            echo 'NO_SYNC_NEEDED=true' >> "$GITHUB_ENV"
+            exit 0
+          fi
+          git push --force-with-lease origin HEAD:sync/upstream-main
+
+      - name: Open or update pull request
+        if: env.NO_SYNC_NEEDED != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing_pr=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --base custom \
+            --head sync/upstream-main \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -n "$existing_pr" ]; then
+            echo "Updated existing pull request #$existing_pr"
+          else
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base custom \
+              --head sync/upstream-main \
+              --title 'chore: sync custom branch with upstream main' \
+              --body $'This pull request was generated automatically.\n\nIt merges the latest `main` branch into `custom`.\n\nPlease review the diff and run the project checks before merging. If this workflow fails during the merge step, resolve the conflict manually in `custom`.'
+          fi
