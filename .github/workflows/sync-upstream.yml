@@ -31,7 +31,8 @@ jobs:
           set -euo pipefail
           git remote add upstream https://github.com/Moonfin-Client/Moonfin-Core.git
           git fetch --prune upstream main
-          git push origin upstream/main:main
+          git merge --no-edit upstream/main
+          git push origin main
 
   prepare-custom-sync:
     name: Prepare custom sync pull request
