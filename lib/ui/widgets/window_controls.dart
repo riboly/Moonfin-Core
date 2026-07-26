@@ -5,6 +5,78 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../util/platform_detection.dart';
 
+/// Top-right Windows chrome: show caption buttons only while the pointer is
+/// over the corner, then auto-hide shortly after the pointer leaves.
+class WindowControlChrome extends StatefulWidget {
+  const WindowControlChrome({super.key});
+
+  @override
+  State<WindowControlChrome> createState() => _WindowControlChromeState();
+}
+
+class _WindowControlChromeState extends State<WindowControlChrome> {
+  static const Duration _hideDelay = Duration(seconds: 2);
+  static const Duration _fadeDuration = Duration(milliseconds: 160);
+
+  bool _visible = false;
+  bool _hovering = false;
+  Timer? _hideTimer;
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _show() {
+    _hideTimer?.cancel();
+    if (!_visible || !_hovering) {
+      setState(() {
+        _hovering = true;
+        _visible = true;
+      });
+    } else {
+      _hovering = true;
+    }
+  }
+
+  void _scheduleHide() {
+    _hovering = false;
+    _hideTimer?.cancel();
+    _hideTimer = Timer(_hideDelay, () {
+      if (!mounted || _hovering) return;
+      setState(() => _visible = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!PlatformDetection.isWindows) {
+      return const SizedBox.shrink();
+    }
+
+    return MouseRegion(
+      onEnter: (_) => _show(),
+      onExit: (_) => _scheduleHide(),
+      // Slightly larger than the 3 buttons so the top-right corner is easy to hit
+      // while the chrome is hidden.
+      child: SizedBox(
+        width: 140,
+        height: 48,
+        child: Align(
+          alignment: Alignment.topRight,
+          child: AnimatedOpacity(
+            opacity: _visible ? 1 : 0,
+            duration: _fadeDuration,
+            curve: Curves.easeOut,
+            child: const WindowControlButtons(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// In-app replacement for the native Windows caption buttons.
 ///
 /// The native title bar is removed on Windows, so these controls remain

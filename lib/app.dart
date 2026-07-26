@@ -260,7 +260,7 @@ class _MoonfinAppState extends State<MoonfinApp> {
                                     const Positioned(
                                       top: 4,
                                       right: 4,
-                                      child: WindowControlButtons(),
+                                      child: WindowControlChrome(),
                                     ),
                                 ],
                               ),

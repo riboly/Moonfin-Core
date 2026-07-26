@@ -3432,17 +3432,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                         !hideOsdForPreroll) ...[
                       _buildTopOverlay(context),
                       _buildBottomOverlay(context),
-                      if (PlatformDetection.isWindows)
-                        const Positioned(
-                          top: 4,
-                          right: 4,
-                          child: WindowControlButtons(),
-                        ),
                       if (!PlatformDetection.useLeanbackUi)
                         Positioned.fill(
                           child: Center(child: _buildCenterTransportControls()),
                         ),
                     ],
+                    if (PlatformDetection.isWindows)
+                      const Positioned(
+                        top: 4,
+                        right: 4,
+                        child: WindowControlChrome(),
+                      ),
                     _buildBufferingIndicator(),
                     _buildVolumeOverlay(),
                     if (PlatformDetection.useMobileUi)
