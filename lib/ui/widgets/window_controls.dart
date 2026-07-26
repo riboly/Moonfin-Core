@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../util/fullscreen_helper.dart';
 import '../../util/platform_detection.dart';
 
 /// Top-right Windows chrome: show caption buttons only while the pointer is
@@ -116,12 +117,31 @@ class _WindowControlButtonsState extends State<WindowControlButtons>
     }
   }
 
+  Future<void> _minimizeWindow() async {
+    try {
+      // Windows ignores minimize while the window is exclusive-fullscreen.
+      // Exit fullscreen first, then minimize.
+      if (await windowManager.isFullScreen()) {
+        await FullscreenHelper.setFullscreen(false);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      }
+      await windowManager.minimize();
+    } catch (_) {}
+  }
+
   Future<void> _toggleMaximized() async {
-    if (_isMaximized) {
-      await windowManager.unmaximize();
-    } else {
-      await windowManager.maximize();
-    }
+    try {
+      // Maximize/restore is also unreliable while exclusive-fullscreen.
+      if (await windowManager.isFullScreen()) {
+        await FullscreenHelper.setFullscreen(false);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      }
+      if (_isMaximized) {
+        await windowManager.unmaximize();
+      } else {
+        await windowManager.maximize();
+      }
+    } catch (_) {}
   }
 
   @override
@@ -146,7 +166,7 @@ class _WindowControlButtonsState extends State<WindowControlButtons>
         _WindowControlButton(
           icon: Icons.remove,
           tooltip: 'Minimize',
-          onPressed: windowManager.minimize,
+          onPressed: _minimizeWindow,
         ),
         _WindowControlButton(
           icon: _isMaximized ? Icons.filter_none : Icons.crop_square,

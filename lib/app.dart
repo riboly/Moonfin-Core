@@ -244,8 +244,10 @@ class _MoonfinAppState extends State<MoonfinApp> {
                                   ),
                                   if (PlatformDetection.isWindows && !hidePlayer)
                                     const Positioned(
+                                      // Leave the left toolbar (back/sort) free so
+                                      // drag-to-move does not steal back navigation.
                                       top: 0,
-                                      left: 0,
+                                      left: 56,
                                       right: 150,
                                       height: 36,
                                       child: WindowDragRegion(

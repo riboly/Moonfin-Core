@@ -17,7 +17,7 @@ class FavoritesViewModel extends ChangeNotifier {
   static const _rowLimit = 30;
   static const _prefKey = 'favorites';
   static const _browseFields =
-      'Type,UserData,CommunityRating,OfficialRating,RunTimeTicks,ProductionYear,Status,ImageTags,BackdropImageTags,ParentBackdropItemId,ParentBackdropImageTags,CriticRating,MediaStreams';
+      'Type,UserData,CommunityRating,OfficialRating,RunTimeTicks,ProductionYear,Status,ImageTags,BackdropImageTags,ParentBackdropItemId,ParentBackdropImageTags,CriticRating,MediaStreams,CanDelete';
 
   static const List<FavoriteTypeFilter> rowTypes = [
     FavoriteTypeFilter.movie,

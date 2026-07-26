@@ -208,8 +208,11 @@ List<ItemContextAction> contextActionsFor(
       ));
     }
 
-    // Windows: Emby/Jellyfin server-side delete (uses server CanDelete flag).
-    if (PlatformDetection.isWindows && item.canDelete) {
+    // Windows: Emby/Jellyfin server-side delete.
+    // List endpoints often omit CanDelete unless requested; admins can always
+    // attempt delete and the server enforces permissions.
+    if (PlatformDetection.isWindows &&
+        (item.canDelete || isAdminUser)) {
       actions.add(ItemContextAction(
         icon: Icons.delete_forever,
         label: l10n.deleteItem,

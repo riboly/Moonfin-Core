@@ -639,9 +639,23 @@ class _LibraryBrowseScreenState extends State<LibraryBrowseScreen>
                 allLetterFocusNode: _allLetterFocusNode,
                 isMusicBrowse: _vm.isMusicBrowse,
                 playedFilter: _vm.playedFilter,
-                onBack: () => PlatformDetection.isWeb
-                    ? context.popOrHome()
-                    : context.pop(),
+                onBack: () {
+                  // Defer pop to the next frame so toolbar gesture/focus cleanup
+                  // finishes before the route is torn down (avoids
+                  // `_dependents.isEmpty` crashes on desktop).
+                  final nav = Navigator.of(context);
+                  final router = GoRouter.of(context);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!context.mounted) return;
+                    if (PlatformDetection.isWeb) {
+                      context.popOrHome();
+                      return;
+                    }
+                    if (nav.canPop()) {
+                      router.pop();
+                    }
+                  });
+                },
                 onSort: () => _showFilterSortDialog(context),
                 onSettings: () => _showSettingsDialog(context),
                 onShuffle: _isSongsBrowse ? () => _shuffleSongsLibrary() : null,
@@ -702,7 +716,7 @@ class _LibraryBrowseScreenState extends State<LibraryBrowseScreen>
         recursive: true,
         sortBy: 'Random',
         limit: 300,
-        fields: 'PrimaryImageAspectRatio,SortName,Type,IsFolder,UserData,CommunityRating,OfficialRating,RunTimeTicks,ProductionYear,ProviderIds,ImageTags,BackdropImageTags,ParentBackdropItemId,ParentBackdropImageTags,ParentThumbItemId,ParentThumbImageTag,SeriesId,SeriesPrimaryImageTag,Album,AlbumId,AlbumArtist,Artists',
+        fields: 'PrimaryImageAspectRatio,SortName,Type,IsFolder,UserData,CommunityRating,OfficialRating,RunTimeTicks,ProductionYear,ProviderIds,ImageTags,BackdropImageTags,ParentBackdropItemId,ParentBackdropImageTags,ParentThumbItemId,ParentThumbImageTag,SeriesId,SeriesPrimaryImageTag,Album,AlbumId,AlbumArtist,Artists,CanDelete',
       );
       final rawItems = (response['Items'] as List?) ?? [];
       final mapped = rawItems
