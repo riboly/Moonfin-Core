@@ -4437,8 +4437,13 @@ class _ContentRowsState extends State<_ContentRows>
           final canUseExpandedV2Card = isRowsV2 && effectiveV2Focused && !row.isAudio;
 
           if (isRowsV2) {
-            ar = canUseExpandedV2Card ? v2FocusedAspect : v2PortraitAspect;
-            width = canUseExpandedV2Card
+            // My Media library tiles use landscape cover-set primaries. Keep the
+            // landscape artwork path even when unfocused so covers show without
+            // needing hover to expand the V2 card.
+            final isMyMediaLibrary = row.rowType == HomeRowType.libraryTiles;
+            final useLandscapeCard = canUseExpandedV2Card || isMyMediaLibrary;
+            ar = useLandscapeCard ? v2FocusedAspect : v2PortraitAspect;
+            width = useLandscapeCard
                 ? v2FocusedWidthForCurrentViewport
                 : v2PortraitWidth;
             final posterUrl = _cachedRowImageUrl(
@@ -4448,9 +4453,9 @@ class _ContentRowsState extends State<_ContentRows>
               ImageType.poster,
               item.type == 'Episode' ? true : useSeriesThumbs,
               requestScale,
-              isMyMediaRow: row.rowType == HomeRowType.libraryTiles,
+              isMyMediaRow: isMyMediaLibrary,
             );
-            imageUrl = canUseExpandedV2Card
+            imageUrl = useLandscapeCard
                 ? (_resolveV2FocusedImageUrl(
                         item,
                         imageApi,
@@ -5432,10 +5437,26 @@ class _ContentRowsState extends State<_ContentRows>
     double requestScale, {
     bool isMyMediaRow = false,
   }) {
+    // Library tiles commonly use landscape primary cover-set images.
+    // Prefer that artwork instead of leaving the poster card empty.
     if (imageType == ImageType.poster && isMyMediaRow) {
       final primaryAr = item.rawData['PrimaryImageAspectRatio'] as num?;
       if (primaryAr != null && primaryAr >= 1.0) {
-        return null;
+        final maxW = (height * primaryAr.toDouble() * requestScale).toInt();
+        final landscapePrimary = _resolvePrimaryImageUrl(
+          item,
+          imageApi,
+          maxWidth: maxW,
+        );
+        if (landscapePrimary != null) {
+          return landscapePrimary;
+        }
+        return _resolveLandscapeImageUrl(
+          item,
+          imageApi,
+          height,
+          requestScale,
+        );
       }
     }
 

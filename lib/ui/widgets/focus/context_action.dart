@@ -9,10 +9,14 @@ import '../../../data/models/aggregated_item.dart';
 import '../../../data/repositories/item_mutation_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../preference/user_preferences.dart';
+import '../../../util/platform_detection.dart';
 import '../../navigation/destinations.dart';
+import '../../navigation/home_refresh_bus.dart';
 import '../add_to_collection_dialog.dart';
 import '../add_to_playlist_dialog.dart';
+import '../adaptive/adaptive_dialog.dart';
 import '../change_artwork_dialog.dart';
+import '../overlay_sheet.dart';
 
 class ItemContextAction {
   final IconData icon;
@@ -198,6 +202,79 @@ List<ItemContextAction> contextActionsFor(
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.adminMetadataRefreshFailed('$e'))),
+            );
+          }
+        },
+      ));
+    }
+
+    // Windows: Emby/Jellyfin server-side delete (uses server CanDelete flag).
+    if (PlatformDetection.isWindows && item.canDelete) {
+      actions.add(ItemContextAction(
+        icon: Icons.delete_forever,
+        label: l10n.deleteItem,
+        onSelect: () async {
+          if (!context.mounted) return;
+          final confirmed = await showFocusRestoringDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog.adaptive(
+              backgroundColor: const Color(0xFF171717),
+              title: Text(
+                l10n.deleteItem,
+                style: const TextStyle(color: Colors.white),
+              ),
+              content: Text(
+                l10n.deleteConfirmMessage(item.name),
+                style: const TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                adaptiveDialogAction(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(l10n.cancel),
+                ),
+                adaptiveDialogAction(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  isDestructive: true,
+                  child: Text(
+                    l10n.delete,
+                    style: const TextStyle(color: Color(0xFFD32F2F)),
+                  ),
+                ),
+              ],
+            ),
+          );
+          if (confirmed != true) return;
+
+          try {
+            await client.itemsApi.deleteItem(item.id);
+            homeRefreshBus.requestNowOrAfterNavigation();
+            onChanged?.call();
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.itemDeleted)),
+            );
+          } on DioException catch (e) {
+            final status = e.response?.statusCode;
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  (status == 401 || status == 403)
+                      ? l10n.requestErrorPermission
+                      : l10n.failedToDeleteItemWithError(
+                          e.response?.statusMessage ?? e.message ?? '$e',
+                        ),
+                ),
+                backgroundColor: const Color(0xFFD32F2F),
+              ),
+            );
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.failedToDeleteItemWithError('$e')),
+                backgroundColor: const Color(0xFFD32F2F),
+              ),
             );
           }
         },
