@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Moonfin Windows (flutter run)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "windows",
+      "args": []
+    },
+    {
+      "name": "Moonfin Windows Debug EXE",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/windows/x64/runner/Debug/moonfin.exe",
+      "cwd": "${workspaceFolder}/build/windows/x64/runner/Debug",
+      "stopAtEntry": false
+    }
+  ]
+}

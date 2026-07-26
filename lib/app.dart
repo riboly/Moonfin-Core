@@ -36,6 +36,7 @@ import 'ui/theme/app_theme.dart';
 import 'ui/theme/app_theme_controller.dart';
 import 'ui/widgets/cast_mini_player.dart';
 import 'ui/widgets/offline_banner.dart';
+import 'ui/widgets/window_controls.dart';
 import 'ui/widgets/exit_confirmation_dialog.dart';
 import 'ui/screensaver/screensaver_controller.dart';
 import 'ui/screensaver/screensaver_host.dart';
@@ -241,10 +242,26 @@ class _MoonfinAppState extends State<MoonfinApp> {
                                   _ConnectivityListener(
                                     child: child ?? const SizedBox.shrink(),
                                   ),
+                                  if (PlatformDetection.isWindows && !hidePlayer)
+                                    const Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      right: 150,
+                                      height: 36,
+                                      child: WindowDragRegion(
+                                        child: SizedBox.expand(),
+                                      ),
+                                    ),
                                   const Align(
                                     alignment: Alignment.topCenter,
                                     child: OfflineBanner(),
                                   ),
+                                  if (PlatformDetection.isWindows && !hidePlayer)
+                                    const Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: WindowControlButtons(),
+                                    ),
                                 ],
                               ),
                             ),

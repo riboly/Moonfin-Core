@@ -17,6 +17,7 @@ import 'package:volume_controller/volume_controller.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../../util/fullscreen_helper.dart';
+import '../../widgets/window_controls.dart';
 import '../../widgets/playback/seek_icons.dart';
 import '../../widgets/playback/trickplay_tile_image.dart';
 
@@ -3431,6 +3432,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                         !hideOsdForPreroll) ...[
                       _buildTopOverlay(context),
                       _buildBottomOverlay(context),
+                      if (PlatformDetection.isWindows)
+                        const Positioned(
+                          top: 4,
+                          right: 4,
+                          child: WindowControlButtons(),
+                        ),
                       if (!PlatformDetection.useLeanbackUi)
                         Positioned.fill(
                           child: Center(child: _buildCenterTransportControls()),

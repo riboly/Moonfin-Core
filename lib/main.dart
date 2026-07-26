@@ -124,6 +124,10 @@ Future<void> _restoreWindowGeometry() async {
     minimumSize: const Size(minW, minH),
     center: !hasSavedGeometry,
     skipTaskbar: false,
+    titleBarStyle: PlatformDetection.isWindows
+        ? TitleBarStyle.hidden
+        : TitleBarStyle.normal,
+    windowButtonVisibility: PlatformDetection.isWindows ? false : true,
   );
 
   await windowManager.waitUntilReadyToShow(options, () async {
